@@ -2,15 +2,23 @@
   "name": "@analytics-event-platform/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run dev-env:dev",
+    "dev:infra": "nx run dev-env:infra",
+    "dev:services": "nx run dev-env:services"
+  },
   "private": true,
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-fastify": "^11.1.11",
     "axios": "^1.6.0",
+    "fastify": "^4.29.1",
+    "nats": "^2.29.3",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",

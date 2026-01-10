@@ -1,0 +1,6 @@
+node_modules
+dist
+.nx
+.git
+npm-debug.log
+coverage

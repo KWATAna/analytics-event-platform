@@ -1,0 +1,37 @@
+{
+  "name": "dev-env",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "targets": {
+    "infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f docker-compose.dev.yml up",
+        "cwd": "."
+      }
+    },
+    "services": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nx run-many --target=serve --projects=gateway-service,ingestion-service,reporting-service --parallel",
+        "cwd": "."
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "parallel": true,
+        "cwd": ".",
+        "commands": [
+          {
+            "command": "docker compose -f docker-compose.dev.yml up"
+          },
+          {
+            "command": "nx run-many --target=serve --projects=gateway-service,ingestion-service,reporting-service --parallel"
+          }
+        ]
+      }
+    }
+  },
+  "tags": []
+}
