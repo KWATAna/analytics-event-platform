@@ -1,30 +1,41 @@
 import { JSONCodec, JetStreamClient, NatsError } from 'nats';
 import { eventSchema, Event } from '@analytics-event-platform/contracts';
 import { LogFn } from './nats-connection';
-import { MessagingUnavailableError } from './messaging.errors';
+import {
+  MessagingPayloadTooLargeException,
+  MessagingUnavailableError,
+} from './messaging.errors';
 
 const codec = JSONCodec<Event>();
+const MAX_NATS_PAYLOAD = 5_000_000;
 
 export class EventPublisher {
   constructor(
     private readonly js: JetStreamClient,
-    private readonly log: LogFn
+    private readonly log: LogFn,
   ) {}
 
   async publish(event: Event): Promise<void> {
     const validated = eventSchema.parse(event);
     const subject = `events.${validated.source}`;
+    const encoded = codec.encode(validated);
+
+    if (encoded.length > MAX_NATS_PAYLOAD) {
+      throw new MessagingPayloadTooLargeException(
+        `Event size ${encoded.length} exceeds NATS max payload of ${MAX_NATS_PAYLOAD} bytes.`,
+      );
+    }
 
     try {
-      await this.js.publish(subject, codec.encode(validated), {
+      await this.js.publish(subject, encoded, {
         msgID: validated.eventId,
       });
-      this.log({
-        level: 'info',
-        message: 'event_published',
-        subject,
-        eventId: validated.eventId,
-      });
+      // this.log({
+      //   level: 'info',
+      //   message: 'event_published',
+      //   subject,
+      //   eventId: validated.eventId,
+      // });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.log({

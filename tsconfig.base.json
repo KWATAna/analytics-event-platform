@@ -20,6 +20,9 @@
       ],
       "@analytics-event-platform/contracts": [
         "libs/contracts/src/index.ts"
+      ],
+      "@analytics-event-platform/observability": [
+        "libs/observability/src/index.ts"
       ]
     }
   },

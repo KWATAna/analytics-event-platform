@@ -22,8 +22,15 @@ export class AppController {
   @Post('webhook')
   @HttpCode(HttpStatus.ACCEPTED)
   async handleWebhook(@Body() payload: unknown) {
-    console.log('Received webhook:', payload);
-    const result = eventSchema.safeParse(payload);
+    const normalized = this.normalizePayload(payload);
+    if (!Array.isArray(normalized)) {
+      throw new BadRequestException({
+        message: 'Invalid event payload',
+        errors: [{ path: '', message: 'Payload must be an array' }],
+      });
+    }
+    console.log('Received webhook:', normalized);
+    const result = eventSchema.array().safeParse(normalized);
 
     if (!result.success) {
       throw new BadRequestException({
@@ -35,6 +42,35 @@ export class AppController {
       });
     }
 
-    return this.appService.handleWebhook(result.data);
+    const events = result.data;
+    await Promise.all(
+      events.map((event) => this.appService.handleWebhook(event)),
+    );
+
+    return { status: 'accepted' };
+  }
+
+  private normalizePayload(payload: unknown): unknown {
+    if (Buffer.isBuffer(payload)) {
+      return this.parseJson(payload.toString('utf8'));
+    }
+
+    if (typeof payload === 'string') {
+      return this.parseJson(payload);
+    }
+
+    return payload;
+  }
+
+  private parseJson(raw: string): unknown {
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid JSON';
+      throw new BadRequestException({
+        message: 'Invalid JSON payload',
+        error: message,
+      });
+    }
   }
 }
