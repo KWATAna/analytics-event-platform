@@ -4,8 +4,7 @@ import { connectWithRetry, LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
 import { EventPublisher } from './event-publisher';
 import { EventPullConsumer } from './event-consumer';
-
-export const NATS_CONNECTION = Symbol('NATS_CONNECTION');
+import { NATS_CONNECTION } from './messaging.constants';
 
 const log: LogFn = (payload) => {
   console.log({ component: 'messaging', ...payload });

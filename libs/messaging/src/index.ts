@@ -1,5 +1,6 @@
 export { EventPublisher } from './lib/event-publisher';
 export { EventPullConsumer, type FetchBatchOptions } from './lib/event-consumer';
+export { NATS_CONNECTION } from './lib/messaging.constants';
 export {
   MessagingPayloadTooLargeException,
   MessagingUnavailableError,

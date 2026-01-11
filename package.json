@@ -7,7 +7,8 @@
     "dev:infra": "nx run dev-env:infra",
     "dev:services": "nx run dev-env:services",
     "prisma:generate": "nx run persistence:prisma-generate",
-    "prisma:migrate": "nx run persistence:db-migrate"
+    "prisma:migrate": "nx run persistence:db-migrate",
+    "prisma:studio": "nx run persistence:db-studio"
   },
   "private": true,
   "dependencies": {

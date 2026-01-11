@@ -8,6 +8,7 @@ import { eventSchema, Event } from '@analytics-event-platform/contracts';
 import { logger } from '@analytics-event-platform/observability';
 import { EventPullConsumer } from '@analytics-event-platform/messaging';
 import { PrismaService } from '@analytics-event-platform/persistence';
+import { Prisma } from '@prisma/client';
 
 const BATCH_SIZE = 100;
 const BATCH_EXPIRES_MS = 5000;
@@ -21,12 +22,13 @@ const delay = (ms: number) =>
   });
 
 type EventRecord = {
-  eventId: string;
+  id: string;
+  timestamp: Date;
   source: string;
   funnelStage: string;
   eventType: string;
-  timestamp: string;
-  payload: Event;
+  purchaseAmount: string | null;
+  data: Prisma.InputJsonValue;
 };
 
 @Injectable()
@@ -151,13 +153,38 @@ export class ProcessorService
 
   private toEventRecord(event: Event): EventRecord {
     return {
-      eventId: event.eventId,
+      id: event.eventId,
+      timestamp: this.parseTimestamp(event.timestamp),
       source: event.source,
       funnelStage: event.funnelStage,
       eventType: event.eventType,
-      timestamp: event.timestamp,
-      payload: event,
+      purchaseAmount: this.extractPurchaseAmount(event),
+      data: this.toJsonValue(event),
     };
+  }
+
+  private toJsonValue(event: Event): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(event)) as Prisma.InputJsonValue;
+  }
+
+  private parseTimestamp(value: string): Date {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+    logger.warn({
+      message: 'ingestion_event_invalid_timestamp',
+      value,
+    });
+    return new Date();
+  }
+
+  private extractPurchaseAmount(event: Event): string | null {
+    const engagement = event.data?.engagement as { purchaseAmount?: string | null };
+    const purchaseAmount = engagement?.purchaseAmount;
+    return typeof purchaseAmount === 'string' && purchaseAmount.length > 0
+      ? purchaseAmount
+      : null;
   }
 
   private nextBackoffMs(msg: JsMsg): number {

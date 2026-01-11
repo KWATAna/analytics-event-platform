@@ -4,13 +4,14 @@ import {
   Consumer,
   ConsumerConfig,
   DeliverPolicy,
+  ReplayPolicy,
   JetStreamManager,
   NatsError,
   NatsConnection,
 } from 'nats';
 import { LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
-import { NATS_CONNECTION } from './messaging.module';
+import { NATS_CONNECTION } from './messaging.constants';
 
 const EVENTS_STREAM = 'EVENTS_STREAM';
 const EVENTS_SUBJECT = 'events.*';
@@ -52,6 +53,7 @@ const ensureEventsConsumer = async (
       durable_name: durableName,
       ack_policy: AckPolicy.Explicit,
       deliver_policy: DeliverPolicy.All,
+      replay_policy: ReplayPolicy.Instant,
       filter_subject: EVENTS_SUBJECT,
       ack_wait: ackWaitMs * 1_000_000,
       max_ack_pending: maxAckPending,

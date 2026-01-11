@@ -22,7 +22,16 @@
         ],
         "envFile": ".env.development"
       }
-    }
+    },
+    "db-studio": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": [
+            "npx prisma studio"
+          ],
+          "envFile": ".env.development"
+        }
+      }
   },
   "tags": []
 }

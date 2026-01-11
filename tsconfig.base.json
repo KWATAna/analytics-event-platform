@@ -26,7 +26,7 @@
       ],
       "@analytics-event-platform/persistence": [
         "libs/persistence/src/index.ts"
-      ]
+      ],
     }
   },
   "exclude": ["node_modules", "tmp"]
