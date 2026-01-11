@@ -7,18 +7,31 @@ import {
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
 import { FastifyReply } from 'fastify';
 
-const PAYLOAD_LIMIT_BYTES = 5_242_880;
+export const PAYLOAD_LIMIT_BYTES = 26_214_400;
 
-type FastifyBodyTooLargeError = {
+export type FastifyBodyTooLargeError = {
   code?: string;
   message?: string;
 };
 
-const isFastifyBodyTooLarge = (error: unknown): error is FastifyBodyTooLargeError =>
+export const isFastifyBodyTooLarge = (
+  error: unknown,
+): error is FastifyBodyTooLargeError =>
   typeof error === 'object' &&
   error !== null &&
   'code' in error &&
   (error as FastifyBodyTooLargeError).code === 'FST_ERR_CTP_BODY_TOO_LARGE';
+
+export const buildPayloadTooLargeResponse = (
+  message: string = 'Payload exceeds allowed limit.',
+) => ({
+  statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+  error: 'Payload Too Large',
+  code: 'ERR_PAYLOAD_EXCEEDS_LIMIT',
+  message,
+  details: { limit: PAYLOAD_LIMIT_BYTES, unit: 'bytes' },
+  timestamp: new Date().toISOString(),
+});
 
 @Catch()
 export class PayloadTooLargeFilter extends BaseExceptionFilter {
@@ -40,16 +53,12 @@ export class PayloadTooLargeFilter extends BaseExceptionFilter {
     const message =
       exception instanceof PayloadTooLargeException
         ? exception.message
-        : (exception as FastifyBodyTooLargeError).message ??
-          'Payload exceeds allowed limit.';
+        : ((exception as FastifyBodyTooLargeError).message ??
+          'Payload exceeds allowed limit.');
+    // request body is too large
 
-    response.status(HttpStatus.PAYLOAD_TOO_LARGE).send({
-      statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
-      error: 'Payload Too Large',
-      code: 'ERR_PAYLOAD_EXCEEDS_LIMIT',
-      message,
-      details: { limit: PAYLOAD_LIMIT_BYTES, unit: 'bytes' },
-      timestamp: new Date().toISOString(),
-    });
+    response
+      .status(HttpStatus.PAYLOAD_TOO_LARGE)
+      .send(buildPayloadTooLargeResponse(message));
   }
 }

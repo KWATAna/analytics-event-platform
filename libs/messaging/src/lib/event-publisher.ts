@@ -38,13 +38,16 @@ export class EventPublisher {
       // });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.log({
-        level: 'error',
-        message: 'event_publish_failed',
-        subject,
-        eventId: validated.eventId,
-        error: message,
-      });
+      const stringified =
+        typeof error === 'object' ? JSON.stringify(error) : String(error);
+      this.log({ level: 'error', message: stringified });
+      // this.log({
+      //   level: 'error',
+      //   message: 'event_publish_failed',
+      //   subject,
+      //   eventId: validated.eventId,
+      //   error: message,
+      // });
 
       if (error instanceof NatsError) {
         throw new MessagingUnavailableError(message);

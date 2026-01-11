@@ -8,6 +8,7 @@ type RequestWithBody = {
   body?: unknown;
 };
 
+// todo i need to understand how this middleware works
 @Injectable()
 export class RequestSizeLogger implements NestMiddleware {
   use(req: RequestWithBody, _res: unknown, next: () => void): void {
@@ -39,6 +40,7 @@ export class RequestSizeLogger implements NestMiddleware {
   }
 
   private estimateBodySize(body: unknown): number {
+    console.log(typeof body);
     if (typeof body === 'string') {
       return Buffer.byteLength(body);
     }

@@ -1,8 +1,3 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -11,35 +6,58 @@ import {
 import { AppModule } from './app/app.module';
 import { HttpAdapterHost } from '@nestjs/core';
 import { NatsExceptionFilter } from './app/nats-exception.filter';
-import { PayloadTooLargeFilter } from './app/payload-too-large.filter';
+import {
+  buildPayloadTooLargeResponse,
+  isFastifyBodyTooLarge,
+  PayloadTooLargeFilter,
+  PAYLOAD_LIMIT_BYTES,
+} from './app/payload-too-large.filter';
 
 async function bootstrap() {
+  const bodyLimitBytes = PAYLOAD_LIMIT_BYTES;
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      bodyLimit: 26214400,
+      bodyLimit: bodyLimitBytes,
     }),
   );
 
-  const bodyLimit = 10_485_760;
-  app.useBodyParser('application/json', { bodyLimit });
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
+  const fastify = app.getHttpAdapter().getInstance();
+
+  fastify.addHook('onRequest', async (req) => {
+    const len = req.headers['content-length'];
+    if (len) {
+      console.log('[REQ SIZE]', req.method, req.url, Number(len));
+    }
+  });
+
+  app.setGlobalPrefix('api');
+
   const adapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(
+    new NatsExceptionFilter(), // keep this
     new PayloadTooLargeFilter(adapterHost),
-    new NatsExceptionFilter(),
   );
 
-  const port = process.env.PORT || 3000;
+  await app.init();
 
-  await app.listen(port);
+  fastify.setErrorHandler((err, req, reply) => {
+    if (isFastifyBodyTooLarge(err)) {
+      console.error('[413]', req.method, req.url);
+      reply
+        .status(413)
+        .send(
+          buildPayloadTooLargeResponse(
+            err.message ?? 'Request body is too large',
+          ),
+        );
+      return;
+    }
 
-  console.log({
-    level: 'info',
-    message: 'gateway_listening',
-    url: `http://localhost:${port}/${globalPrefix}`,
+    reply.send(err);
   });
+
+  await app.listen(3000);
 }
 
 bootstrap();

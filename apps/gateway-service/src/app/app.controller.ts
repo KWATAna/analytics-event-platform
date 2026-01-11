@@ -8,6 +8,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { eventSchema } from '@analytics-event-platform/contracts';
+import { logger } from '@analytics-event-platform/observability';
 import { AppService } from './app.service';
 
 @Controller()
@@ -29,25 +30,37 @@ export class AppController {
         errors: [{ path: '', message: 'Payload must be an array' }],
       });
     }
-    console.log('Received webhook:', normalized);
-    const result = eventSchema.array().safeParse(normalized);
+    const startTime = Date.now();
+    let validCount = 0;
+    let corruptCount = 0;
 
-    if (!result.success) {
-      throw new BadRequestException({
-        message: 'Invalid event payload',
-        errors: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-      });
-    }
+    const publishPromises = normalized.map(async (rawEvent) => {
+      const result = eventSchema.safeParse(rawEvent);
+      if (!result.success) {
+        corruptCount++;
+        logger.warn({
+          message: 'corrupt_event_detected',
+          errors: result.error.format(),
+          preview: JSON.stringify(rawEvent).substring(0, 100),
+        });
+        return;
+      }
 
-    const events = result.data;
-    await Promise.all(
-      events.map((event) => this.appService.handleWebhook(event)),
-    );
+      await this.appService.handleWebhook(result.data);
+      validCount++;
+    });
 
-    return { status: 'accepted' };
+    await Promise.allSettled(publishPromises);
+
+    return {
+      status: 'processed',
+      stats: {
+        received: normalized.length,
+        published: validCount,
+        corrupted: corruptCount,
+        durationMs: Date.now() - startTime,
+      },
+    };
   }
 
   private normalizePayload(payload: unknown): unknown {

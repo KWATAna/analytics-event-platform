@@ -9,10 +9,8 @@ import { RequestSizeLogger } from './request-size-logger.middleware';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
-
-// export class AppModule implements NestModule {
-//   configure(consumer: MiddlewareConsumer) {
-//     consumer.apply(RequestSizeLogger).forRoutes('*');
-//   }
-// }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestSizeLogger).forRoutes('*');
+  }
+}
