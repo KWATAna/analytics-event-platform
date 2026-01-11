@@ -8,7 +8,7 @@ import { eventSchema, Event } from '@analytics-event-platform/contracts';
 import { logger } from '@analytics-event-platform/observability';
 import { EventPullConsumer } from '@analytics-event-platform/messaging';
 import { PrismaService } from '@analytics-event-platform/persistence';
-import { Prisma } from '@prisma/client';
+import { InputJsonValue } from '@my-project/db-types';
 
 const BATCH_SIZE = 100;
 const BATCH_EXPIRES_MS = 5000;
@@ -28,7 +28,7 @@ type EventRecord = {
   funnelStage: string;
   eventType: string;
   purchaseAmount: string | null;
-  data: Prisma.InputJsonValue;
+  data: InputJsonValue;
 };
 
 @Injectable()
@@ -163,8 +163,8 @@ export class ProcessorService
     };
   }
 
-  private toJsonValue(event: Event): Prisma.InputJsonValue {
-    return JSON.parse(JSON.stringify(event)) as Prisma.InputJsonValue;
+  private toJsonValue(event: Event): InputJsonValue {
+    return JSON.parse(JSON.stringify(event)) as InputJsonValue;
   }
 
   private parseTimestamp(value: string): Date {
@@ -180,7 +180,9 @@ export class ProcessorService
   }
 
   private extractPurchaseAmount(event: Event): string | null {
-    const engagement = event.data?.engagement as { purchaseAmount?: string | null };
+    const engagement = event.data?.engagement as {
+      purchaseAmount?: string | null;
+    };
     const purchaseAmount = engagement?.purchaseAmount;
     return typeof purchaseAmount === 'string' && purchaseAmount.length > 0
       ? purchaseAmount

@@ -27,6 +27,9 @@
       "@analytics-event-platform/persistence": [
         "libs/persistence/src/index.ts"
       ],
+      "@my-project/db-client": ["generated/prisma/client"],
+      "@my-project/db-client/*": ["generated/prisma/*"],
+      "@my-project/db-types": ["generated/prisma/internal/prismaNamespace.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
