@@ -16,11 +16,13 @@ import type * as Prisma from "./prismaNamespace.ts"
 
 
 const config: runtime.GetPrismaClientConfig = {
-  "previewFeatures": [],
+  "previewFeatures": [
+    "views"
+  ],
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel Event {\n  id String @id @map(\"event_id\")\n\n  timestamp   DateTime @default(now())\n  source      String\n  funnelStage String   @map(\"funnel_stage\")\n  eventType   String   @map(\"event_type\")\n\n  purchaseAmount Decimal? @map(\"purchase_amount\") @db.Decimal(10, 2)\n\n  data Json\n\n  @@index([timestamp])\n  @@index([source, funnelStage])\n  @@index([eventType])\n  @@map(\"events\")\n}\n",
+  "inlineSchema": "generator client {\n  provider        = \"prisma-client\"\n  output          = \"../../../generated/prisma\"\n  previewFeatures = [\"views\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel Event {\n  id String @id @map(\"event_id\")\n\n  timestamp   DateTime @default(now())\n  source      String\n  funnelStage String   @map(\"funnel_stage\")\n  eventType   String   @map(\"event_type\")\n\n  purchaseAmount Decimal? @map(\"purchase_amount\") @db.Decimal(10, 2)\n\n  data Json\n\n  @@index([timestamp])\n  @@index([source, funnelStage])\n  @@index([eventType])\n  @@map(\"events\")\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},

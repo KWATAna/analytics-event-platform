@@ -8,3 +8,4 @@ export {
 export { MessagingModule } from './lib/messaging.module';
 export { connectWithRetry } from './lib/nats-connection';
 export { ensureEventsStream } from './lib/jetstream';
+export { NatsHealthIndicator } from './lib/nats-health.indicator';

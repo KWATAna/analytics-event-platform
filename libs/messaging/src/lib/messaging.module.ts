@@ -5,6 +5,7 @@ import { ensureEventsStream } from './jetstream';
 import { EventPublisher } from './event-publisher';
 import { EventPullConsumer } from './event-consumer';
 import { NATS_CONNECTION } from './messaging.constants';
+import { NatsHealthIndicator } from './nats-health.indicator';
 
 const log: LogFn = (payload) => {
   console.log({ component: 'messaging', ...payload });
@@ -56,8 +57,9 @@ const parseServers = (value: string): string[] =>
       inject: [NATS_CONNECTION],
     },
     EventPullConsumer,
+    NatsHealthIndicator,
   ],
-  exports: [EventPublisher, EventPullConsumer],
+  exports: [EventPublisher, EventPullConsumer, NatsHealthIndicator],
 })
 export class MessagingModule implements OnModuleDestroy {
   constructor(@Inject(NATS_CONNECTION) private readonly nc: NatsConnection) {}

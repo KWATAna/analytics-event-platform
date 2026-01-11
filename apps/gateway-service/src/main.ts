@@ -32,6 +32,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
+  app.enableShutdownHooks();
 
   const adapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(

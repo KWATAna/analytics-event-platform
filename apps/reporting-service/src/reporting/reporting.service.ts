@@ -61,6 +61,7 @@ export class ReportingService {
         ORDER BY day ASC
       `);
 
+      console.log(rows, typeof rows[0].totalRevenue);
       return rows.map((row) => ({
         day: row.day,
         totalEvents: this.toNumber(row.totalEvents),
@@ -77,13 +78,17 @@ export class ReportingService {
     return this.getCached(cacheKey, async () => {
       const campaignExpr = Prisma.sql`
         COALESCE(
+          data->'data'->'engagement'->>'campaignId',
+          data->'data'->'engagement'->>'campaign_id',
           data->'engagement'->>'campaignId',
           data->'engagement'->>'campaign_id'
         )
       `;
-      const whereClause = this.buildWhereClause(filters, Prisma.raw('"timestamp"'), [
-        Prisma.sql`${campaignExpr} IS NOT NULL`,
-      ]);
+      const whereClause = this.buildWhereClause(
+        filters,
+        Prisma.raw('"timestamp"'),
+        [Prisma.sql`${campaignExpr} IS NOT NULL`],
+      );
 
       const rows = await this.prisma.$queryRaw<
         Array<{
@@ -97,7 +102,7 @@ export class ReportingService {
           ${campaignExpr} AS "campaignId",
           SUM(
             CASE
-              WHEN event_type = 'checkout.complete' THEN COALESCE(purchase_amount, 0)
+              WHEN event_type IN ('checkout.complete', 'purchase') THEN COALESCE(purchase_amount, 0)
               ELSE 0
             END
           )::numeric AS "totalRevenue",
@@ -129,7 +134,10 @@ export class ReportingService {
   ): Promise<CountryBreakdownRow[]> {
     const cacheKey = this.buildCacheKey('country-breakdown', filters);
     return this.getCached(cacheKey, async () => {
-      const whereClause = this.buildWhereClause(filters, Prisma.raw('"timestamp"'));
+      const whereClause = this.buildWhereClause(
+        filters,
+        Prisma.raw('"timestamp"'),
+      );
       const rows = await this.prisma.$queryRaw<
         Array<{
           country: string;
@@ -139,14 +147,16 @@ export class ReportingService {
       >(Prisma.sql`
         SELECT
           COALESCE(
+            data->'data'->'user'->'location'->>'country',
             data->'user'->'location'->>'country',
+            data->'data'->'engagement'->>'country',
             data->'engagement'->>'country',
             'unknown'
           ) AS "country",
           COUNT(*)::bigint AS "totalEvents",
           SUM(
             CASE
-              WHEN event_type = 'checkout.complete' THEN COALESCE(purchase_amount, 0)
+              WHEN event_type IN ('checkout.complete', 'purchase') THEN COALESCE(purchase_amount, 0)
               ELSE 0
             END
           )::numeric AS "totalRevenue"
@@ -187,10 +197,13 @@ export class ReportingService {
       return Prisma.sql``;
     }
 
-    return Prisma.sql`WHERE ${Prisma.join(conditions, Prisma.sql` AND `)}`;
+    return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
   }
 
   private toNumber(value: unknown): number {
+    if (value === null || value === undefined) {
+      return 0;
+    }
     if (typeof value === 'bigint') {
       return Number(value);
     }
@@ -199,6 +212,12 @@ export class ReportingService {
     }
     if (typeof value === 'string') {
       return Number(value);
+    }
+    if (value instanceof Prisma.Decimal) {
+      return Number(value.toString());
+    }
+    if (typeof value === 'object' && 'toString' in value) {
+      return Number(String(value));
     }
     return 0;
   }

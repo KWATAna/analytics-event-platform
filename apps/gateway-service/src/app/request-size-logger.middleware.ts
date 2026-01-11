@@ -8,7 +8,6 @@ type RequestWithBody = {
   body?: unknown;
 };
 
-// todo i need to understand how this middleware works
 @Injectable()
 export class RequestSizeLogger implements NestMiddleware {
   use(req: RequestWithBody, _res: unknown, next: () => void): void {
