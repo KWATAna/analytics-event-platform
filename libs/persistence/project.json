@@ -3,6 +3,23 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/persistence/src",
   "projectType": "library",
-  "targets": {},
-  "tags": []
+  "targets": {
+    "prisma-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "npx prisma generate --schema libs/persistence/prisma/schema.prisma"
+        ]
+      }
+    },
+    "db-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "npx prisma migrate dev --schema libs/persistence/prisma/schema.prisma"
+        ]
+      }
+    }
+  },
+"tags": []
 }
