@@ -1,4 +1,5 @@
 export { EventPublisher } from './lib/event-publisher';
+export { EventPullConsumer, type FetchBatchOptions } from './lib/event-consumer';
 export {
   MessagingPayloadTooLargeException,
   MessagingUnavailableError,

@@ -3,6 +3,7 @@ import { JetStreamClient, NatsConnection } from 'nats';
 import { connectWithRetry, LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
 import { EventPublisher } from './event-publisher';
+import { EventPullConsumer } from './event-consumer';
 
 export const NATS_CONNECTION = Symbol('NATS_CONNECTION');
 
@@ -55,8 +56,9 @@ const parseServers = (value: string): string[] =>
       },
       inject: [NATS_CONNECTION],
     },
+    EventPullConsumer,
   ],
-  exports: [EventPublisher],
+  exports: [EventPublisher, EventPullConsumer],
 })
 export class MessagingModule implements OnModuleDestroy {
   constructor(@Inject(NATS_CONNECTION) private readonly nc: NatsConnection) {}

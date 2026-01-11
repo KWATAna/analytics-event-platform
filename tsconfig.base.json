@@ -23,6 +23,9 @@
       ],
       "@analytics-event-platform/observability": [
         "libs/observability/src/index.ts"
+      ],
+      "@analytics-event-platform/persistence": [
+        "libs/persistence/src/index.ts"
       ]
     }
   },

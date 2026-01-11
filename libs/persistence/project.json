@@ -1,0 +1,8 @@
+{
+  "name": "persistence",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/persistence/src",
+  "projectType": "library",
+  "targets": {},
+  "tags": []
+}

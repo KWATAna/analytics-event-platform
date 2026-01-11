@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id String @id @map("event_id")
+
+  timestamp   DateTime @default(now())
+  source      String
+  funnelStage String   @map("funnel_stage")
+  eventType   String   @map("event_type")
+
+  purchaseAmount Decimal? @map("purchase_amount") @db.Decimal(10, 2)
+
+  data Json
+
+  @@index([timestamp])
+  @@index([source, funnelStage])
+  @@index([eventType])
+  @@map("events")
+}
