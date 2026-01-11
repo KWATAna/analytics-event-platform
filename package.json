@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "nx run dev-env:dev",
     "dev:infra": "nx run dev-env:infra",
-    "dev:services": "nx run dev-env:services"
+    "dev:services": "nx run dev-env:services",
+    "prisma:generate": "nx run persistence:prisma-generate",
+    "prisma:migrate": "nx run persistence:db-migrate"
   },
   "private": true,
   "dependencies": {
@@ -48,7 +50,7 @@
     "jest-util": "^30.0.2",
     "nx": "22.3.3",
     "prettier": "~3.6.2",
-    "prisma": "^5.22.0",
+    "prisma": "^7.2.0",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",

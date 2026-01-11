@@ -8,18 +8,21 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "npx prisma generate --schema libs/persistence/prisma/schema.prisma"
-        ]
+          "npx prisma generate --schema prisma/schema.prisma"
+        ],
+        "envFile": ".env.development",
+        "parallel": false
       }
     },
     "db-migrate": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "npx prisma migrate dev --schema libs/persistence/prisma/schema.prisma"
-        ]
+          "npx prisma migrate dev --schema prisma/schema.prisma"
+        ],
+        "envFile": ".env.development"
       }
     }
   },
-"tags": []
+  "tags": []
 }

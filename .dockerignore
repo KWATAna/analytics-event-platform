@@ -4,3 +4,4 @@ dist
 .git
 npm-debug.log
 coverage
+.env.development
