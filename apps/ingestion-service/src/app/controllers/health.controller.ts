@@ -6,7 +6,7 @@ import {
 } from '@nestjs/terminus';
 import { NatsHealthIndicator } from '@analytics-event-platform/messaging';
 import { PrismaService } from '@analytics-event-platform/persistence';
-import { MemoryBackpressureIndicator } from './memory-backpressure.indicator';
+import { MemoryBackpressureIndicator } from '../indicators/memory-backpressure.indicator';
 
 @Controller('health')
 export class HealthController {

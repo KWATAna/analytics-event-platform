@@ -6,11 +6,11 @@ import {
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app/app.module';
 import { HttpAdapterHost } from '@nestjs/core';
-import { NatsExceptionFilter } from './app/nats-exception.filter';
+import { NatsExceptionFilter } from './app/filters/nats-exception.filter';
 import {
   PayloadTooLargeFilter,
   PAYLOAD_LIMIT_BYTES,
-} from './app/payload-too-large.filter';
+} from './app/filters/payload-too-large.filter';
 
 async function bootstrap() {
   const bodyLimitBytes = PAYLOAD_LIMIT_BYTES;

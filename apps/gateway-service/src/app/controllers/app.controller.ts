@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { eventSchema } from '@analytics-event-platform/contracts';
 import { logger } from '@analytics-event-platform/shared/logger';
-import { AppService } from './app.service';
+import { AppService } from '../services/app.service';
 
 @Controller()
 export class AppController {

@@ -3,11 +3,11 @@ import { MessagingModule } from '@analytics-event-platform/messaging';
 import { TerminusModule } from '@nestjs/terminus';
 import { LoggerModule } from 'nestjs-pino';
 import { createLoggerModuleOptions } from '@analytics-event-platform/shared/logger';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { RequestSizeLogger } from './request-size-logger.middleware';
-import { HealthController } from './health.controller';
-import { TraceMiddleware } from './trace.middleware';
+import { AppController } from './controllers/app.controller';
+import { HealthController } from './controllers/health.controller';
+import { RequestSizeLogger } from './middleware/request-size-logger.middleware';
+import { TraceMiddleware } from './middleware/trace.middleware';
+import { AppService } from './services/app.service';
 
 @Module({
   imports: [
