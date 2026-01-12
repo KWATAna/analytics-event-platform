@@ -21,9 +21,11 @@ export class RequestSizeLogger implements NestMiddleware {
       ? contentLengthHeader[0]
       : contentLengthHeader;
     let sizeBytes = headerValue ? Number.parseInt(headerValue, 10) : NaN;
+    let sizeSource: 'content-length' | 'estimated' = 'content-length';
 
     if (!Number.isFinite(sizeBytes)) {
       sizeBytes = this.estimateBodySize(req.body);
+      sizeSource = 'estimated';
     }
 
     const source = this.getSource(req);
@@ -32,6 +34,7 @@ export class RequestSizeLogger implements NestMiddleware {
       message: 'request_size',
       source,
       sizeBytes,
+      sizeSource,
       path: req.url,
     });
 
@@ -39,7 +42,10 @@ export class RequestSizeLogger implements NestMiddleware {
   }
 
   private estimateBodySize(body: unknown): number {
-    console.log(typeof body);
+    if (body == null) {
+      return 0;
+    }
+
     if (typeof body === 'string') {
       return Buffer.byteLength(body);
     }
@@ -48,8 +54,24 @@ export class RequestSizeLogger implements NestMiddleware {
       return body.length;
     }
 
+    if (body instanceof Uint8Array) {
+      return body.byteLength;
+    }
+
+    if (
+      typeof body === 'number' ||
+      typeof body === 'boolean' ||
+      typeof body === 'bigint'
+    ) {
+      return Buffer.byteLength(String(body));
+    }
+
     if (body && typeof body === 'object') {
-      return Buffer.byteLength(JSON.stringify(body));
+      try {
+        return Buffer.byteLength(JSON.stringify(body));
+      } catch {
+        return 0;
+      }
     }
 
     return 0;
