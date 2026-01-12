@@ -19,7 +19,23 @@ Common variables:
 
 Example local env: `.env.local` (this is the file local dev scripts read).
 
-## Start locally (preferred)
+## Start with Docker
+
+This uses docker-compose.yml and builds all app images.
+
+```sh
+docker compose build
+docker compose up
+```
+
+Stop everything:
+
+```sh
+docker compose down
+```
+
+
+## Start locally
 
 Install dependencies, create your local env file, and run the dev stack. This
 will start Postgres + NATS, generate the Prisma client, run migrations, then

@@ -10,7 +10,6 @@
         "commands": [
           "npx prisma generate --schema libs/persistence/prisma/schema.prisma"
         ],
-        "envFile": ".env.development",
         "parallel": false
       }
     },
@@ -18,9 +17,8 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "npx prisma migrate dev --schema libs/persistence/prisma/schema.prisma"
-        ],
-        "envFile": ".env.development"
+          "npx prisma migrate deploy --schema libs/persistence/prisma/schema.prisma"
+        ]
       }
     },
     "db-studio": {
