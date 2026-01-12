@@ -5,11 +5,12 @@
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
+    "esModuleInterop": true,      
+    "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
+    "target": "es2020",
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
@@ -21,11 +22,11 @@
       "@analytics-event-platform/contracts": [
         "libs/contracts/src/index.ts"
       ],
-      "@analytics-event-platform/observability": [
-        "libs/observability/src/index.ts"
-      ],
       "@analytics-event-platform/persistence": [
         "libs/persistence/src/index.ts"
+      ],
+      "@analytics-event-platform/shared/logger": [
+        "libs/shared/logger/src/index.ts"
       ],
       "@my-project/db-client": ["generated/prisma/client"],
       "@my-project/db-client/*": ["generated/prisma/*"],

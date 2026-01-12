@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@my-project/db-client';
 import { PrismaService } from '@analytics-event-platform/persistence';
+import { logger } from '@analytics-event-platform/shared/logger';
 
 export type ReportFilters = {
   source?: 'facebook' | 'tiktok';
@@ -61,7 +62,11 @@ export class ReportingService {
         ORDER BY day ASC
       `);
 
-      console.log(rows, typeof rows[0].totalRevenue);
+      logger.debug({
+        msg: 'reporting_summary_query',
+        rowCount: rows.length,
+        totalRevenueType: typeof rows[0]?.totalRevenue,
+      });
       return rows.map((row) => ({
         day: row.day,
         totalEvents: this.toNumber(row.totalEvents),

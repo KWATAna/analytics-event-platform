@@ -1,4 +1,5 @@
 import { Inject, Module, OnModuleDestroy } from '@nestjs/common';
+import { TerminusModule } from '@nestjs/terminus';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { connectWithRetry, LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
@@ -6,9 +7,26 @@ import { EventPublisher } from './event-publisher';
 import { EventPullConsumer } from './event-consumer';
 import { NATS_CONNECTION } from './messaging.constants';
 import { NatsHealthIndicator } from './nats-health.indicator';
+import { logger, type LogPayload } from '@analytics-event-platform/shared/logger';
 
-const log: LogFn = (payload) => {
-  console.log({ component: 'messaging', ...payload });
+const logWithLevel = (level: 'debug' | 'info' | 'warn' | 'error', payload: LogPayload) => {
+  switch (level) {
+    case 'debug':
+      logger.debug(payload);
+      break;
+    case 'warn':
+      logger.warn(payload);
+      break;
+    case 'error':
+      logger.error(payload);
+      break;
+    default:
+      logger.info(payload);
+  }
+};
+
+const log: LogFn = ({ level = 'info', ...payload }) => {
+  logWithLevel(level, { component: 'messaging', ...payload });
 };
 
 const parseServers = (value: string): string[] =>
@@ -18,6 +36,7 @@ const parseServers = (value: string): string[] =>
     .filter((server) => server.length > 0);
 
 @Module({
+  imports: [TerminusModule],
   providers: [
     {
       provide: NATS_CONNECTION,

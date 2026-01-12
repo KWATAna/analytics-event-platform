@@ -1,0 +1,8 @@
+{
+  "name": "shared-logger",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/logger/src",
+  "projectType": "library",
+  "targets": {},
+  "tags": []
+}

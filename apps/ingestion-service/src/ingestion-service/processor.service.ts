@@ -5,10 +5,18 @@ import {
 } from '@nestjs/common';
 import { JSONCodec, JsMsg } from 'nats';
 import { eventSchema, Event } from '@analytics-event-platform/contracts';
-import { logger } from '@analytics-event-platform/observability';
+import {
+  logger,
+  resolveTraceId,
+  runWithTraceId,
+  traceIdFromNatsHeaders,
+} from '@analytics-event-platform/shared/logger';
 import { EventPullConsumer } from '@analytics-event-platform/messaging';
 import { PrismaService } from '@analytics-event-platform/persistence';
 import { InputJsonValue } from '@my-project/db-types';
+import { BatchLoggingInterceptor } from './batch-logging.interceptor';
+import { NatsTraceInterceptor } from './nats-trace.interceptor';
+import { from, lastValueFrom } from 'rxjs';
 
 const BATCH_SIZE = 100;
 const BATCH_EXPIRES_MS = 5000;
@@ -31,6 +39,24 @@ type EventRecord = {
   data: InputJsonValue;
 };
 
+type MessageContext = {
+  msg: JsMsg;
+  traceId: string;
+  source: string;
+};
+
+type BatchLogContext = {
+  batchSize: number;
+  source: string;
+  sources?: string[];
+  traceIds?: string[];
+};
+
+type BatchResult = {
+  status: 'success' | 'failed' | 'empty';
+  persisted: number;
+};
+
 @Injectable()
 export class ProcessorService
   implements OnApplicationBootstrap, OnModuleDestroy
@@ -42,6 +68,8 @@ export class ProcessorService
   constructor(
     private readonly consumer: EventPullConsumer,
     private readonly prisma: PrismaService,
+    private readonly batchLogger: BatchLoggingInterceptor,
+    private readonly natsTrace: NatsTraceInterceptor,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -71,64 +99,68 @@ export class ProcessorService
           continue;
         }
 
-        const validEvents: EventRecord[] = [];
-        const validMessages: JsMsg[] = [];
+        const messageContexts = messages.map((msg) => ({
+          msg,
+          traceId: traceIdFromNatsHeaders(msg.headers),
+          source: this.extractSource(msg),
+        }));
+        const { logContext, traceId } = this.buildBatchContext(messageContexts);
 
-        for (const msg of messages) {
-          const decoded = this.decodeMessage(msg);
-          if (!decoded) {
-            msg.ack();
-            continue;
-          }
+        await runWithTraceId(traceId, () =>
+          this.batchLogger.intercept(logContext, async (): Promise<BatchResult> => {
+            const validEvents: EventRecord[] = [];
+            const validMessages: JsMsg[] = [];
 
-          const result = eventSchema.safeParse(decoded);
-          if (!result.success) {
-            logger.warn({
-              message: 'ingestion_event_invalid',
-              errors: result.error.format(),
-              deliveryCount: msg.info.deliveryCount,
-            });
-            msg.ack();
-            continue;
-          }
+            for (const context of messageContexts) {
+              const eventRecord = await lastValueFrom(
+                this.natsTrace.intercept(
+                  context.msg,
+                  {
+                    handle: () => from(this.processMessage(context.msg)),
+                  },
+                  context.traceId,
+                ),
+              );
 
-          validEvents.push(this.toEventRecord(result.data));
-          validMessages.push(msg);
-        }
+              if (eventRecord) {
+                validEvents.push(eventRecord);
+                validMessages.push(context.msg);
+              }
+            }
 
-        if (validEvents.length === 0) {
-          continue;
-        }
+            if (validEvents.length === 0) {
+              return { status: 'empty', persisted: 0 };
+            }
 
-        try {
-          await this.prisma.event.createMany({
-            data: validEvents,
-            skipDuplicates: true,
-          });
+            try {
+              await this.prisma.event.createMany({
+                data: validEvents,
+                skipDuplicates: true,
+              });
 
-          validMessages.forEach((msg) => msg.ack());
-          logger.info({
-            message: 'ingestion_batch_persisted',
-            persisted: validEvents.length,
-          });
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          logger.error({
-            message: 'ingestion_batch_failed',
-            error: errorMessage,
-          });
+              validMessages.forEach((msg) => msg.ack());
+              return { status: 'success', persisted: validEvents.length };
+            } catch (error) {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              logger.error({
+                msg: 'ingestion_batch_failed',
+                error: errorMessage,
+              });
 
-          validMessages.forEach((msg) => {
-            msg.nak(this.nextBackoffMs(msg));
-          });
-          await delay(IDLE_DELAY_MS);
-        }
+              validMessages.forEach((msg) => {
+                msg.nak(this.nextBackoffMs(msg));
+              });
+              await delay(IDLE_DELAY_MS);
+              return { status: 'failed', persisted: 0 };
+            }
+          }),
+        );
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         logger.error({
-          message: 'ingestion_loop_failed',
+          msg: 'ingestion_loop_failed',
           error: errorMessage,
         });
         await delay(IDLE_DELAY_MS);
@@ -143,12 +175,33 @@ export class ProcessorService
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       logger.warn({
-        message: 'ingestion_event_decode_failed',
+        msg: 'ingestion_event_decode_failed',
         error: errorMessage,
         deliveryCount: msg.info.deliveryCount,
       });
       return null;
     }
+  }
+
+  private async processMessage(msg: JsMsg): Promise<EventRecord | null> {
+    const decoded = this.decodeMessage(msg);
+    if (!decoded) {
+      msg.ack();
+      return null;
+    }
+
+    const result = eventSchema.safeParse(decoded);
+    if (!result.success) {
+      logger.warn({
+        msg: 'ingestion_event_invalid',
+        errors: result.error.format(),
+        deliveryCount: msg.info.deliveryCount,
+      });
+      msg.ack();
+      return null;
+    }
+
+    return this.toEventRecord(result.data);
   }
 
   private toEventRecord(event: Event): EventRecord {
@@ -173,7 +226,7 @@ export class ProcessorService
       return parsed;
     }
     logger.warn({
-      message: 'ingestion_event_invalid_timestamp',
+      msg: 'ingestion_event_invalid_timestamp',
       value,
     });
     return new Date();
@@ -195,5 +248,34 @@ export class ProcessorService
       BASE_NACK_DELAY_MS * 2 ** (deliveryCount - 1),
       MAX_NACK_DELAY_MS,
     );
+  }
+
+  private extractSource(msg: JsMsg): string {
+    if (msg.subject.startsWith('events.')) {
+      return msg.subject.slice('events.'.length);
+    }
+    return msg.subject;
+  }
+
+  private buildBatchContext(messages: MessageContext[]): {
+    logContext: BatchLogContext;
+    traceId: string;
+  } {
+    const sources = new Set(messages.map((message) => message.source));
+    const traceIds = new Set(messages.map((message) => message.traceId));
+    const logContext: BatchLogContext = {
+      batchSize: messages.length,
+      source: sources.size === 1 ? [...sources][0] : 'mixed',
+    };
+
+    if (sources.size > 1) {
+      logContext.sources = [...sources];
+    }
+    if (traceIds.size > 1) {
+      logContext.traceIds = [...traceIds];
+    }
+
+    const traceId = traceIds.values().next().value ?? resolveTraceId();
+    return { logContext, traceId };
   }
 }

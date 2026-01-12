@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { eventSchema } from '@analytics-event-platform/contracts';
-import { logger } from '@analytics-event-platform/observability';
+import { logger } from '@analytics-event-platform/shared/logger';
 import { AppService } from './app.service';
 
 @Controller()
@@ -33,7 +33,7 @@ export class AppController {
       if (!result.success) {
         corruptCount++;
         logger.warn({
-          message: 'corrupt_event_detected',
+          msg: 'corrupt_event_detected',
           errors: result.error.format(),
           preview: JSON.stringify(rawEvent).substring(0, 100),
         });

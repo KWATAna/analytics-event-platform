@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { logger } from '@analytics-event-platform/observability';
+import { logger } from '@analytics-event-platform/shared/logger';
 
 type RequestWithBody = {
   method?: string;
@@ -31,7 +31,7 @@ export class RequestSizeLogger implements NestMiddleware {
     const source = this.getSource(req);
 
     logger.info({
-      message: 'request_size',
+      msg: 'request_size',
       source,
       sizeBytes,
       sizeSource,

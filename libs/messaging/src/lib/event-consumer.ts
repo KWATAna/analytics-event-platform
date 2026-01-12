@@ -12,6 +12,7 @@ import {
 import { LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
 import { NATS_CONNECTION } from './messaging.constants';
+import { logger, type LogPayload } from '@analytics-event-platform/shared/logger';
 
 const EVENTS_STREAM = 'EVENTS_STREAM';
 const EVENTS_SUBJECT = 'events.*';
@@ -24,8 +25,24 @@ export type FetchBatchOptions = {
   expires: number;
 };
 
-const log: LogFn = (payload) => {
-  console.log({ component: 'messaging', ...payload });
+const logWithLevel = (level: 'debug' | 'info' | 'warn' | 'error', payload: LogPayload) => {
+  switch (level) {
+    case 'debug':
+      logger.debug(payload);
+      break;
+    case 'warn':
+      logger.warn(payload);
+      break;
+    case 'error':
+      logger.error(payload);
+      break;
+    default:
+      logger.info(payload);
+  }
+};
+
+const log: LogFn = ({ level = 'info', ...payload }) => {
+  logWithLevel(level, { component: 'messaging', ...payload });
 };
 
 const isNatsError = (error: unknown): error is NatsError =>
@@ -37,7 +54,7 @@ const ensureEventsConsumer = async (
 ): Promise<void> => {
   try {
     await jsm.consumers.info(EVENTS_STREAM, durableName);
-    log({ level: 'info', message: 'events_consumer_exists', durableName });
+    log({ level: 'info', msg: 'events_consumer_exists', durableName });
   } catch (error) {
     if (!isNatsError(error) || error.code !== '404') {
       throw error;
@@ -60,7 +77,7 @@ const ensureEventsConsumer = async (
     };
 
     await jsm.consumers.add(EVENTS_STREAM, config);
-    log({ level: 'info', message: 'events_consumer_created', durableName });
+    log({ level: 'info', msg: 'events_consumer_created', durableName });
   }
 };
 

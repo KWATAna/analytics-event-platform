@@ -5,7 +5,8 @@ import {
   PayloadTooLargeException,
 } from '@nestjs/common';
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
-import { FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { logger } from '@analytics-event-platform/shared/logger';
 
 export const PAYLOAD_LIMIT_BYTES = 26_214_400;
 
@@ -23,7 +24,7 @@ export const isFastifyBodyTooLarge = (
   (error as FastifyBodyTooLargeError).code === 'FST_ERR_CTP_BODY_TOO_LARGE';
 
 export const buildPayloadTooLargeResponse = (
-  message: string = 'Payload exceeds allowed limit.',
+  message = 'Payload exceeds allowed limit.',
 ) => ({
   statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
   error: 'Payload Too Large',
@@ -50,12 +51,17 @@ export class PayloadTooLargeFilter extends BaseExceptionFilter {
     }
 
     const response = host.switchToHttp().getResponse<FastifyReply>();
+    const request = host.switchToHttp().getRequest<FastifyRequest>();
     const message =
       exception instanceof PayloadTooLargeException
         ? exception.message
         : ((exception as FastifyBodyTooLargeError).message ??
           'Payload exceeds allowed limit.');
-    // request body is too large
+    logger.error({
+      msg: 'payload_too_large',
+      method: request?.method,
+      path: request?.url,
+    });
 
     response
       .status(HttpStatus.PAYLOAD_TOO_LARGE)

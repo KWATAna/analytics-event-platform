@@ -10,15 +10,15 @@ import {
   MessagingPayloadTooLargeException,
   MessagingUnavailableError,
 } from '@analytics-event-platform/messaging';
+import { logger } from '@analytics-event-platform/shared/logger';
 
 const MAX_NATS_PAYLOAD = 5_000_000;
 
 @Catch(MessagingUnavailableError, MessagingPayloadTooLargeException, NatsError)
 export class NatsExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
-    console.log({
-      level: 'error',
-      message: 'nats_unavailable',
+    logger.error({
+      msg: 'nats_unavailable',
       error: exception.message,
     });
 

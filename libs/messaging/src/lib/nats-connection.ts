@@ -1,6 +1,8 @@
 import { connect, ConnectionOptions, NatsConnection } from 'nats';
+import type { LogPayload } from '@analytics-event-platform/shared/logger';
 
-export type LogFn = (payload: Record<string, unknown>) => void;
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogFn = (payload: LogPayload & { level?: LogLevel }) => void;
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -20,7 +22,7 @@ const startStatusListener = async (
     if (status.type === 'disconnect' || status.type === 'reconnect') {
       log({
         level: 'info',
-        message: 'nats_status',
+        msg: 'nats_status',
         type: status.type,
         data: status.data,
       });
@@ -45,19 +47,19 @@ export const connectWithRetry = async (
         if (err) {
           log({
             level: 'error',
-            message: 'nats_closed',
+            msg: 'nats_closed',
             error: err.message,
           });
         }
       });
-      log({ level: 'info', message: 'nats_connected', servers: options.servers });
+      log({ level: 'info', msg: 'nats_connected', servers: options.servers });
       return nc;
     } catch (error) {
       attempt += 1;
       const message = error instanceof Error ? error.message : String(error);
       log({
         level: 'warn',
-        message: 'nats_connect_failed',
+        msg: 'nats_connect_failed',
         attempt,
         error: message,
       });
