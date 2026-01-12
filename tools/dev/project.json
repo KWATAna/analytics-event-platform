@@ -20,11 +20,20 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "parallel": true,
         "cwd": ".",
+        "parallel": false,
         "commands": [
           {
-            "command": "docker compose -f docker-compose.dev.yml up"
+            "command": "docker compose -f docker-compose.dev.yml up -d"
+          },
+          {
+            "command": "sh -c \"until docker compose -f docker-compose.dev.yml exec -T postgres pg_isready -U analytics -d analytics; do sleep 2; done\""
+          },
+          {
+            "command": "nx run persistence:prisma-generate"
+          },
+          {
+            "command": "nx run persistence:db-migrate"
           },
           {
             "command": "nx run-many --target=serve --projects=gateway-service,ingestion-service,reporting-service --parallel"

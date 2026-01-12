@@ -9,6 +9,37 @@ High-throughput event ingestion and reporting platform built on Nx + NestJS, Fas
 - Reporting service (query + analytics endpoints): http://localhost:3002/api
 - NATS monitoring: http://localhost:8222
 
+## Environment for development
+
+Common variables:
+
+- DATABASE_URL (Postgres connection string)
+- NATS_URL (NATS connection string)
+- LOG_LEVEL (debug, info, warn, error)
+
+Example local env: `.env.local` (this is the file local dev scripts read).
+
+## Start locally (preferred)
+
+Install dependencies, create your local env file, and run the dev stack. This
+will start Postgres + NATS, generate the Prisma client, run migrations, then
+boot the services:
+
+```sh
+cp .env.local .env.development
+```
+
+```sh
+npm install
+npm run dev
+```
+
+If you only need infrastructure (Postgres + NATS), run:
+
+```sh
+npm run dev:infra
+```
+
 ## Start with Docker
 
 This uses docker-compose.yml and builds all app images.
@@ -22,6 +53,24 @@ Stop everything:
 
 ```sh
 docker compose down
+```
+
+## Prisma
+
+The local dev command already generates the Prisma client and runs migrations,
+but you can run them directly if needed:
+
+Generate the Prisma client and run migrations via npm scripts:
+
+```sh
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+Open Prisma Studio:
+
+```sh
+npm run prisma:studio
 ```
 
 ## Health checks
@@ -73,7 +122,8 @@ Common variables:
 - NATS_URL (NATS connection string)
 - LOG_LEVEL (debug, info, warn, error)
 
-Example dev env: .env.development.
+Example local env: `.env.local`. Local dev scripts read `.env.development`,
+so copy the example before running.
 
 ## Postman collection
 
