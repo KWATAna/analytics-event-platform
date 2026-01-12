@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "Analytics Event Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Health checks and core API endpoints for gateway, ingestion, and reporting services."
+  },
+  "variable": [
+    {
+      "key": "gatewayBaseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "ingestionBaseUrl",
+      "value": "http://localhost:3001/api"
+    },
+    {
+      "key": "reportingBaseUrl",
+      "value": "http://localhost:3002/api"
+    },
+    {
+      "key": "traceId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Gateway Service",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayBaseUrl}}/health",
+              "host": [
+                "{{gatewayBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-trace-id",
+                "value": "{{traceId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"eventId\": \"evt_fb_001\",\n    \"timestamp\": \"2026-01-12T16:00:00.000Z\",\n    \"source\": \"facebook\",\n    \"funnelStage\": \"top\",\n    \"eventType\": \"ad.view\",\n    \"data\": {\n      \"user\": {\n        \"userId\": \"fb_user_1\",\n        \"name\": \"Alex Doe\",\n        \"age\": 30,\n        \"gender\": \"non-binary\",\n        \"location\": {\n          \"country\": \"US\",\n          \"city\": \"Austin\"\n        }\n      },\n      \"engagement\": {\n        \"actionTime\": \"2026-01-12T16:00:00.000Z\",\n        \"referrer\": \"newsfeed\",\n        \"videoId\": \"vid_123\"\n      }\n    }\n  },\n  {\n    \"eventId\": \"evt_tt_001\",\n    \"timestamp\": \"2026-01-12T16:00:05.000Z\",\n    \"source\": \"tiktok\",\n    \"funnelStage\": \"bottom\",\n    \"eventType\": \"purchase\",\n    \"data\": {\n      \"user\": {\n        \"userId\": \"tt_user_1\",\n        \"username\": \"sasha\",\n        \"followers\": 1200\n      },\n      \"engagement\": {\n        \"actionTime\": \"2026-01-12T16:00:04.000Z\",\n        \"profileId\": \"profile_9\",\n        \"purchasedItem\": \"hoodie\",\n        \"purchaseAmount\": \"59.99\"\n      }\n    }\n  }\n]"
+            },
+            "url": {
+              "raw": "{{gatewayBaseUrl}}/webhook",
+              "host": [
+                "{{gatewayBaseUrl}}"
+              ],
+              "path": [
+                "webhook"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingestion Service",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ingestionBaseUrl}}/health",
+              "host": [
+                "{{ingestionBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ingestionBaseUrl}}/",
+              "host": [
+                "{{ingestionBaseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reporting Service",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/health",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/summary",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "facebook",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-01-31",
+                  "disabled": true
+                },
+                {
+                  "key": "dateRange",
+                  "value": "2026-01-01,2026-01-31",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Top Campaigns",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/top-campaigns",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "top-campaigns"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "tiktok",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": true
+                },
+                {
+                  "key": "dateRange",
+                  "value": "2026-01-01,2026-01-31",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Geography",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/geography",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "geography"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "facebook",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-01-31",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Summary (Default)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/summary",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Summary (Source Facebook)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/summary",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "facebook"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Summary (Date Range Params)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/summary",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Summary (Date Range CSV)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/summary",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "dateRange",
+                  "value": "2026-01-01,2026-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Top Campaigns (Default)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/top-campaigns",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "top-campaigns"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Top Campaigns (Limit 5)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/top-campaigns",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "top-campaigns"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Top Campaigns (Source + Date Range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/top-campaigns",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "top-campaigns"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "tiktok"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Geography (Default)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/geography",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "geography"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Geography (Source Facebook)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/geography",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "geography"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "facebook"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Geography (Date Range CSV)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/geography",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "geography"
+              ],
+              "query": [
+                {
+                  "key": "dateRange",
+                  "value": "2026-01-01,2026-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports Geography (Invalid Country Filter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reportingBaseUrl}}/reports/geography",
+              "host": [
+                "{{reportingBaseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "geography"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "Timor-Leste"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
