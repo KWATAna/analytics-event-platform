@@ -1,82 +1,80 @@
-# AnalyticsEventPlatform
+# Analytics Event Platform
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+High-throughput event ingestion and reporting platform built on Nx + NestJS, Fastify, NATS, and Postgres.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+## Services
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- Gateway service (HTTP ingress + NATS publish): http://localhost:3000/api
+- Ingestion service (NATS consumer + Postgres persist): http://localhost:3001/api
+- Reporting service (query + analytics endpoints): http://localhost:3002/api
+- NATS monitoring: http://localhost:8222
 
-## Finish your remote caching setup
+## Start with Docker
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/YMNohV1pxW)
-
-
-## Run tasks
-
-To run the dev server for your app, use:
+This uses docker-compose.yml and builds all app images.
 
 ```sh
-npx nx serve analytics-event-platform
+docker compose build
+docker compose up
 ```
 
-To create a production bundle:
+Stop everything:
 
 ```sh
-npx nx build analytics-event-platform
+docker compose down
 ```
 
-To see all available targets to run for a project, run:
+## Health checks
 
-```sh
-npx nx show project analytics-event-platform
-```
+- Gateway: GET http://localhost:3000/api/health
+- Ingestion: GET http://localhost:3001/api/health
+- Reporting: GET http://localhost:3002/api/health
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## API endpoints
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Gateway:
 
-## Add new projects
+- POST http://localhost:3000/api/webhook
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+Reporting:
 
-Use the plugin's generator to create new projects.
+- GET http://localhost:3002/api/reports/summary
+- GET http://localhost:3002/api/reports/top-campaigns
+- GET http://localhost:3002/api/reports/geography
 
-To generate a new application, use:
+## Postgres schema
 
-```sh
-npx nx g @nx/nest:app demo
-```
+Core table: `events` (see `libs/persistence/prisma/schema.prisma`)
 
-To generate a new library, use:
+- `event_id` (PK)
+- `timestamp`
+- `source`
+- `funnel_stage`
+- `event_type`
+- `purchase_amount`
+- `data` (JSON)
+- Indexes: `timestamp`, `event_type`, (`source`, `funnel_stage`)
 
-```sh
-npx nx g @nx/node:lib mylib
-```
+Materialized view: `daily_campaign_stats` (see migrations under `libs/persistence/prisma/migrations`)
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+- `day`
+- `source`
+- `campaign_id`
+- `funnel_stage`
+- `total_events`
+- `total_revenue`
+- Indexes: `day/source`, `campaign_id`, `funnel_stage` + unique on (`day`, `source`, `campaign_id`, `funnel_stage`)
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Environment
 
+Common variables:
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- DATABASE_URL (Postgres connection string)
+- NATS_URL (NATS connection string)
+- LOG_LEVEL (debug, info, warn, error)
 
-## Install Nx Console
+Example dev env: .env.development.
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## Postman collection
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Import postman/analytics-event-platform.postman_collection.json to explore health checks and report endpoints.
