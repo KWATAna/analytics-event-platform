@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { logger } from '@analytics-event-platform/shared/logger';
 
+// todo move types out
 type RequestWithBody = {
   method?: string;
   url?: string;

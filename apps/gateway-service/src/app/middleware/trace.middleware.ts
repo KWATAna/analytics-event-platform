@@ -4,16 +4,7 @@ import {
   traceIdFromHeaders,
   TRACE_ID_HEADER,
 } from '@analytics-event-platform/shared/logger';
-
-type TraceRequest = {
-  headers?: Record<string, string | string[] | undefined>;
-  id?: string;
-};
-
-type TraceReply = {
-  header?: (key: string, value: string) => void;
-  setHeader?: (key: string, value: string) => void;
-};
+import { TraceReply, TraceRequest } from './trace.middleware.types';
 
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {

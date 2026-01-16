@@ -107,54 +107,57 @@ export class ProcessorService
         const { logContext, traceId } = this.buildBatchContext(messageContexts);
 
         await runWithTraceId(traceId, () =>
-          this.batchLogger.intercept(logContext, async (): Promise<BatchResult> => {
-            const validEvents: EventRecord[] = [];
-            const validMessages: JsMsg[] = [];
+          this.batchLogger.intercept(
+            logContext,
+            async (): Promise<BatchResult> => {
+              const validEvents: EventRecord[] = [];
+              const validMessages: JsMsg[] = [];
 
-            for (const context of messageContexts) {
-              const eventRecord = await lastValueFrom(
-                this.natsTrace.intercept(
-                  context.msg,
-                  {
-                    handle: () => from(this.processMessage(context.msg)),
-                  },
-                  context.traceId,
-                ),
-              );
+              for (const context of messageContexts) {
+                const eventRecord = await lastValueFrom(
+                  this.natsTrace.intercept(
+                    context.msg,
+                    {
+                      handle: () => from(this.processMessage(context.msg)),
+                    },
+                    context.traceId,
+                  ),
+                );
 
-              if (eventRecord) {
-                validEvents.push(eventRecord);
-                validMessages.push(context.msg);
+                if (eventRecord) {
+                  validEvents.push(eventRecord);
+                  validMessages.push(context.msg);
+                }
               }
-            }
 
-            if (validEvents.length === 0) {
-              return { status: 'empty', persisted: 0 };
-            }
+              if (validEvents.length === 0) {
+                return { status: 'empty', persisted: 0 };
+              }
 
-            try {
-              await this.prisma.event.createMany({
-                data: validEvents,
-                skipDuplicates: true,
-              });
+              try {
+                await this.prisma.event.createMany({
+                  data: validEvents,
+                  skipDuplicates: true,
+                });
 
-              validMessages.forEach((msg) => msg.ack());
-              return { status: 'success', persisted: validEvents.length };
-            } catch (error) {
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              logger.error({
-                msg: 'ingestion_batch_failed',
-                error: errorMessage,
-              });
+                validMessages.forEach((msg) => msg.ack());
+                return { status: 'success', persisted: validEvents.length };
+              } catch (error) {
+                const errorMessage =
+                  error instanceof Error ? error.message : String(error);
+                logger.error({
+                  msg: 'ingestion_batch_failed',
+                  error: errorMessage,
+                });
 
-              validMessages.forEach((msg) => {
-                msg.nak(this.nextBackoffMs(msg));
-              });
-              await delay(IDLE_DELAY_MS);
-              return { status: 'failed', persisted: 0 };
-            }
-          }),
+                validMessages.forEach((msg) => {
+                  msg.nak(this.nextBackoffMs(msg));
+                });
+                await delay(IDLE_DELAY_MS);
+                return { status: 'failed', persisted: 0 };
+              }
+            },
+          ),
         );
       } catch (error) {
         const errorMessage =
