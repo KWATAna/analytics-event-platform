@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { logger } from '@analytics-event-platform/shared/logger';
+import { PinoLogger } from 'nestjs-pino';
 
 export const PAYLOAD_LIMIT_BYTES = 26_214_400;
 
@@ -36,7 +36,10 @@ export const buildPayloadTooLargeResponse = (
 
 @Catch()
 export class PayloadTooLargeFilter extends BaseExceptionFilter {
-  constructor(adapterHost: HttpAdapterHost) {
+  constructor(
+    adapterHost: HttpAdapterHost,
+    private readonly logger: PinoLogger,
+  ) {
     super(adapterHost.httpAdapter);
   }
 
@@ -57,7 +60,7 @@ export class PayloadTooLargeFilter extends BaseExceptionFilter {
         ? exception.message
         : ((exception as FastifyBodyTooLargeError).message ??
           'Payload exceeds allowed limit.');
-    logger.error({
+    this.logger.error({
       msg: 'payload_too_large',
       method: request?.method,
       path: request?.url,

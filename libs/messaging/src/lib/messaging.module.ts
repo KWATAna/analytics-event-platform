@@ -1,15 +1,20 @@
 import { Inject, Module, OnModuleDestroy } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { JetStreamClient, NatsConnection } from 'nats';
+import { PinoLogger } from 'nestjs-pino';
 import { connectWithRetry, LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
 import { EventPublisher } from './event-publisher';
 import { EventPullConsumer } from './event-consumer';
 import { NATS_CONNECTION } from './messaging.constants';
 import { NatsHealthIndicator } from './nats-health.indicator';
-import { logger, type LogPayload } from '@analytics-event-platform/shared/logger';
+import { type LogPayload } from '@analytics-event-platform/shared/logger';
 
-const logWithLevel = (level: 'debug' | 'info' | 'warn' | 'error', payload: LogPayload) => {
+const logWithLevel = (
+  logger: PinoLogger,
+  level: 'debug' | 'info' | 'warn' | 'error',
+  payload: LogPayload,
+) => {
   switch (level) {
     case 'debug':
       logger.debug(payload);
@@ -25,8 +30,8 @@ const logWithLevel = (level: 'debug' | 'info' | 'warn' | 'error', payload: LogPa
   }
 };
 
-const log: LogFn = ({ level = 'info', ...payload }) => {
-  logWithLevel(level, { component: 'messaging', ...payload });
+const createLog = (logger: PinoLogger): LogFn => ({ level = 'info', ...payload }) => {
+  logWithLevel(logger, level, { component: 'messaging', ...payload });
 };
 
 const parseServers = (value: string): string[] =>
@@ -40,7 +45,8 @@ const parseServers = (value: string): string[] =>
   providers: [
     {
       provide: NATS_CONNECTION,
-      useFactory: async () => {
+      useFactory: async (logger: PinoLogger) => {
+        const log = createLog(logger);
         const envUrl = process.env.NATS_URL?.trim();
         const envServers = process.env.NATS_SERVERS?.trim();
         const servers = envUrl
@@ -66,14 +72,15 @@ const parseServers = (value: string): string[] =>
         await ensureEventsStream(jsm, log);
         return nc;
       },
+      inject: [PinoLogger],
     },
     {
       provide: EventPublisher,
-      useFactory: (nc: NatsConnection) => {
+      useFactory: (nc: NatsConnection, logger: PinoLogger) => {
         const js: JetStreamClient = nc.jetstream();
-        return new EventPublisher(js, log);
+        return new EventPublisher(js, createLog(logger));
       },
-      inject: [NATS_CONNECTION],
+      inject: [NATS_CONNECTION, PinoLogger],
     },
     EventPullConsumer,
     NatsHealthIndicator,

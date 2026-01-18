@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { logger } from '@analytics-event-platform/shared/logger';
+import { PinoLogger } from 'nestjs-pino';
 
 // todo move types out
 type RequestWithBody = {
@@ -11,6 +11,8 @@ type RequestWithBody = {
 
 @Injectable()
 export class RequestSizeLogger implements NestMiddleware {
+  constructor(private readonly logger: PinoLogger) {}
+
   use(req: RequestWithBody, _res: unknown, next: () => void): void {
     if (req.method !== 'POST') {
       next();
@@ -31,7 +33,7 @@ export class RequestSizeLogger implements NestMiddleware {
 
     const source = this.getSource(req);
 
-    logger.info({
+    this.logger.info({
       msg: 'request_size',
       source,
       sizeBytes,

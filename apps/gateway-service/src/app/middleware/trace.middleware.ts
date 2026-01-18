@@ -6,6 +6,8 @@ import {
 } from '@analytics-event-platform/shared/logger';
 import { TraceReply, TraceRequest } from './trace.middleware.types';
 
+// this is middleware that is run for all routes and registered in AppModule but it can also be created with app.use()
+// after bootstrapping
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {
   use(req: TraceRequest, res: TraceReply, next: () => void): void {

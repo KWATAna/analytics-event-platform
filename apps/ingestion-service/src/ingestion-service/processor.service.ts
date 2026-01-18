@@ -4,9 +4,9 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { JSONCodec, JsMsg } from 'nats';
+import { PinoLogger } from 'nestjs-pino';
 import { eventSchema, Event } from '@analytics-event-platform/contracts';
 import {
-  logger,
   resolveTraceId,
   runWithTraceId,
   traceIdFromNatsHeaders,
@@ -70,6 +70,7 @@ export class ProcessorService
     private readonly prisma: PrismaService,
     private readonly batchLogger: BatchLoggingInterceptor,
     private readonly natsTrace: NatsTraceInterceptor,
+    private readonly logger: PinoLogger,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -145,7 +146,7 @@ export class ProcessorService
               } catch (error) {
                 const errorMessage =
                   error instanceof Error ? error.message : String(error);
-                logger.error({
+                this.logger.error({
                   msg: 'ingestion_batch_failed',
                   error: errorMessage,
                 });
@@ -162,7 +163,7 @@ export class ProcessorService
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        logger.error({
+        this.logger.error({
           msg: 'ingestion_loop_failed',
           error: errorMessage,
         });
@@ -177,7 +178,7 @@ export class ProcessorService
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.warn({
+      this.logger.warn({
         msg: 'ingestion_event_decode_failed',
         error: errorMessage,
         deliveryCount: msg.info.deliveryCount,
@@ -195,7 +196,7 @@ export class ProcessorService
 
     const result = eventSchema.safeParse(decoded);
     if (!result.success) {
-      logger.warn({
+      this.logger.warn({
         msg: 'ingestion_event_invalid',
         errors: result.error.format(),
         deliveryCount: msg.info.deliveryCount,
@@ -228,7 +229,7 @@ export class ProcessorService
     if (!Number.isNaN(parsed.getTime())) {
       return parsed;
     }
-    logger.warn({
+    this.logger.warn({
       msg: 'ingestion_event_invalid_timestamp',
       value,
     });

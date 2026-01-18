@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { logger } from '@analytics-event-platform/shared/logger';
+import { PinoLogger } from 'nestjs-pino';
 
 type BatchLogContext = {
   batchSize: number;
@@ -15,19 +15,21 @@ type BatchResult = {
 
 @Injectable()
 export class BatchLoggingInterceptor {
+  constructor(private readonly logger: PinoLogger) {}
+
   async intercept<T extends BatchResult>(
     context: BatchLogContext,
     handler: () => Promise<T>,
   ): Promise<T> {
     const startedAt = Date.now();
-    logger.info({
+    this.logger.info({
       msg: 'ingestion_batch_start',
       ...context,
     });
 
     const result = await handler();
 
-    logger.info({
+    this.logger.info({
       msg: 'ingestion_batch_complete',
       ...context,
       ...result,

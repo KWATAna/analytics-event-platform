@@ -9,11 +9,13 @@ import {
   NatsError,
   NatsConnection,
 } from 'nats';
+import { PinoLogger } from 'nestjs-pino';
 import { LogFn } from './nats-connection';
 import { ensureEventsStream } from './jetstream';
 import { NATS_CONNECTION } from './messaging.constants';
-import { logger, type LogPayload } from '@analytics-event-platform/shared/logger';
+import { type LogPayload } from '@analytics-event-platform/shared/logger';
 
+// todo check this
 const EVENTS_STREAM = 'EVENTS_STREAM';
 const EVENTS_SUBJECT = 'events.*';
 const DEFAULT_DURABLE = 'ingestion-worker';
@@ -25,25 +27,38 @@ export type FetchBatchOptions = {
   expires: number;
 };
 
-const logWithLevel = (level: 'debug' | 'info' | 'warn' | 'error', payload: LogPayload) => {
-  switch (level) {
-    case 'debug':
-      logger.debug(payload);
-      break;
-    case 'warn':
-      logger.warn(payload);
-      break;
-    case 'error':
-      logger.error(payload);
-      break;
-    default:
-      logger.info(payload);
-  }
-};
+// const logWithLevel = (
+//   logger: PinoLogger,
+//   level: 'debug' | 'info' | 'warn' | 'error',
+//   payload: LogPayload,
+// ) => {
+//   switch (level) {
+//     case 'debug':
+//       logger.debug(payload);
+//       break;
+//     case 'warn':
+//       logger.warn(payload);
+//       break;
+//     case 'error':
+//       logger.error(payload);
+//       break;
+//     default:
+//       logger.info(payload);
+//   }
+// };
 
-const log: LogFn = ({ level = 'info', ...payload }) => {
-  logWithLevel(level, { component: 'messaging', ...payload });
-};
+// const createLog =
+//   (logger: PinoLogger): LogFn =>
+//   ({ level = 'info', ...payload }) => {
+//     logWithLevel(logger, level, { component: 'messaging', ...payload });
+//   };
+
+const createLog =
+  (logger: PinoLogger): LogFn =>
+  (payload) => {
+    const { level = 'info', ...rest } = payload;
+    logger[level]({ component: 'messaging', ...rest });
+  };
 
 const isNatsError = (error: unknown): error is NatsError =>
   error instanceof Error && 'code' in error;
@@ -51,6 +66,7 @@ const isNatsError = (error: unknown): error is NatsError =>
 const ensureEventsConsumer = async (
   jsm: JetStreamManager,
   durableName: string,
+  log: LogFn,
 ): Promise<void> => {
   try {
     await jsm.consumers.info(EVENTS_STREAM, durableName);
@@ -85,8 +101,14 @@ const ensureEventsConsumer = async (
 export class EventPullConsumer {
   private consumer?: Consumer;
   private durableName?: string;
+  private readonly log: LogFn;
 
-  constructor(@Inject(NATS_CONNECTION) private readonly nc: NatsConnection) {}
+  constructor(
+    @Inject(NATS_CONNECTION) private readonly nc: NatsConnection,
+    private readonly logger: PinoLogger,
+  ) {
+    this.log = createLog(logger);
+  }
 
   async fetch(options: FetchBatchOptions) {
     const consumer = await this.getConsumer();
@@ -105,8 +127,8 @@ export class EventPullConsumer {
     }
 
     const jsm = await this.nc.jetstreamManager();
-    await ensureEventsStream(jsm, log);
-    await ensureEventsConsumer(jsm, durableName);
+    await ensureEventsStream(jsm, this.log);
+    await ensureEventsConsumer(jsm, durableName, this.log);
 
     const stream = await jsm.streams.get(EVENTS_STREAM);
     this.consumer = await stream.getConsumer(durableName);

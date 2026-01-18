@@ -3,7 +3,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { Logger } from 'nestjs-pino';
+import { Logger, PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app/app.module';
 import { HttpAdapterHost } from '@nestjs/core';
 import { NatsExceptionFilter } from './app/filters/nats-exception.filter';
@@ -21,14 +21,17 @@ async function bootstrap() {
     }),
     { bufferLogs: true },
   );
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
 
+  const pino = app.get(PinoLogger);
   const adapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(
-    new NatsExceptionFilter(), // keep this
-    new PayloadTooLargeFilter(adapterHost),
+    new NatsExceptionFilter(pino),
+    new PayloadTooLargeFilter(adapterHost, pino),
   );
 
   await app.init();

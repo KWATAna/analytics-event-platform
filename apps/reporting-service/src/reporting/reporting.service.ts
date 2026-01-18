@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@my-project/db-client';
+import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '@analytics-event-platform/persistence';
-import { logger } from '@analytics-event-platform/shared/logger';
 
 export type ReportFilters = {
   source?: 'facebook' | 'tiktok';
@@ -39,7 +39,10 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 export class ReportingService {
   private readonly cache = new Map<string, CacheEntry<unknown>>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: PinoLogger,
+  ) {}
 
   async getAggregatedMetrics(filters: ReportFilters): Promise<SummaryRow[]> {
     const cacheKey = this.buildCacheKey('summary', filters);
@@ -62,7 +65,7 @@ export class ReportingService {
         ORDER BY day ASC
       `);
 
-      logger.debug({
+      this.logger.debug({
         msg: 'reporting_summary_query',
         rowCount: rows.length,
         totalRevenueType: typeof rows[0]?.totalRevenue,

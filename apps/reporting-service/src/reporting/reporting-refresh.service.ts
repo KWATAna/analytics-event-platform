@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { logger } from '@analytics-event-platform/shared/logger';
+import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '@analytics-event-platform/persistence';
 
 @Injectable()
 export class ReportingRefreshService {
   private refreshInProgress = false;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: PinoLogger,
+  ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async refreshMaterializedView(): Promise<void> {
@@ -22,14 +25,14 @@ export class ReportingRefreshService {
       await this.prisma.$executeRawUnsafe(
         'REFRESH MATERIALIZED VIEW CONCURRENTLY daily_campaign_stats',
       );
-      logger.info({
+      this.logger.info({
         msg: 'reporting_view_refreshed',
         durationMs: Date.now() - startedAt,
       });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error({
+      this.logger.error({
         msg: 'reporting_view_refresh_failed',
         error: errorMessage,
       });

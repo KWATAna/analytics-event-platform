@@ -6,13 +6,16 @@ import {
   HttpStatus,
   Post,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { eventSchema } from '@analytics-event-platform/contracts';
-import { logger } from '@analytics-event-platform/shared/logger';
 import { AppService } from '../services/app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly logger: PinoLogger,
+  ) {}
 
   @Post('webhook')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -32,7 +35,7 @@ export class AppController {
       const result = eventSchema.safeParse(rawEvent);
       if (!result.success) {
         corruptCount++;
-        logger.warn({
+        this.logger.warn({
           msg: 'corrupt_event_detected',
           errors: result.error.format(),
           preview: JSON.stringify(rawEvent).substring(0, 100),

@@ -6,20 +6,23 @@ import {
 } from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 import { NatsError } from 'nats';
+import { PinoLogger } from 'nestjs-pino';
 import {
   MessagingPayloadTooLargeException,
   MessagingUnavailableError,
 } from '@analytics-event-platform/messaging';
-import { logger } from '@analytics-event-platform/shared/logger';
 
 const MAX_NATS_PAYLOAD = 5_000_000;
 
 @Catch(MessagingUnavailableError, MessagingPayloadTooLargeException, NatsError)
 export class NatsExceptionFilter implements ExceptionFilter {
+  constructor(private readonly logger: PinoLogger) {}
+
   catch(exception: Error, host: ArgumentsHost) {
-    logger.error({
-      msg: 'nats_unavailable',
-      error: exception.message,
+    this.logger.error({
+      msg: 'nats_exception_caught',
+      err: exception,
+      type: exception.constructor.name,
     });
 
     const response = host.switchToHttp().getResponse<FastifyReply>();
