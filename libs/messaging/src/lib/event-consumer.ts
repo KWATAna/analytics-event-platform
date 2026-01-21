@@ -15,7 +15,6 @@ import { ensureEventsStream } from './jetstream';
 import { NATS_CONNECTION } from './messaging.constants';
 import { type LogPayload } from '@analytics-event-platform/shared/logger';
 
-// todo check this
 const EVENTS_STREAM = 'EVENTS_STREAM';
 const EVENTS_SUBJECT = 'events.*';
 const DEFAULT_DURABLE = 'ingestion-worker';
